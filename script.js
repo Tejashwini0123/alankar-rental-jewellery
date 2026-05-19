@@ -6,50 +6,28 @@
 
 'use strict';
 
-const modalOverlay = document.getElementById('modalOverlay');
-const modalClose   = document.getElementById('modalClose');
+const modalOverlay   = document.getElementById('modalOverlay');
+const modalClose     = document.getElementById('modalClose');
 const modalItemName  = document.getElementById('modalItemName');
 const modalItemPrice = document.getElementById('modalItemPrice');
-const modalForm    = document.getElementById('modalForm');
+const modalForm      = document.getElementById('modalForm');
 
-/* ─── SAMPLE JEWELLERY DATA ────────────────────────────────────
-   This data is used as initial seed. Admin-uploaded items from
-   LocalStorage are merged with these samples.
-─────────────────────────────────────────────────────────────── */
-const SAMPLE_PRODUCTS = [
-  
-];
+/* ─── FIRESTORE REFERENCE ───────────────────────────────────── */
+const db = firebase.firestore();
+const productsRef = db.collection('products');
 
 /* ─── UTILITY FUNCTIONS ────────────────────────────────────── */
 
-/**
- * Get all products: samples + admin-uploaded from LocalStorage
- */
-function getAllProducts() {
-  let adminProducts = [];
-  try {
-    const stored = localStorage.getItem('alankar_products');
-    if (stored) adminProducts = JSON.parse(stored);
-  } catch (e) { adminProducts = []; }
-  return [...SAMPLE_PRODUCTS, ...adminProducts];
-}
-
-/**
- * Format price with Indian Rupee symbol
- */
 function formatPrice(price) {
   return '₹' + Number(price).toLocaleString('en-IN');
 }
 
-/**
- * Get icon for category (used in placeholder cards)
- */
 function getCatIcon(cat) {
   const icons = {
-    bridal: 'fa-crown',
+    bridal:   'fa-crown',
     necklace: 'fa-ring',
     earrings: 'fa-star',
-    bangles: 'fa-circle-notch'
+    bangles:  'fa-circle-notch'
   };
   return icons[cat] || 'fa-gem';
 }
@@ -63,7 +41,7 @@ window.addEventListener('load', () => {
 });
 
 /* ─── NAVBAR SCROLL BEHAVIOR ────────────────────────────────── */
-const navbar = document.getElementById('navbar');
+const navbar   = document.getElementById('navbar');
 const navLinks = document.querySelectorAll('.nav-link');
 
 function handleNavbarScroll() {
@@ -72,8 +50,6 @@ function handleNavbarScroll() {
   } else {
     navbar.classList.remove('scrolled');
   }
-
-  // Active section highlighting
   const sections = ['home', 'collections', 'about', 'testimonials', 'contact'];
   let current = '';
   sections.forEach(id => {
@@ -89,7 +65,7 @@ window.addEventListener('scroll', handleNavbarScroll, { passive: true });
 handleNavbarScroll();
 
 /* ─── MOBILE MENU ───────────────────────────────────────────── */
-const hamburger = document.getElementById('hamburger');
+const hamburger  = document.getElementById('hamburger');
 const mobileMenu = document.getElementById('mobileMenu');
 
 hamburger.addEventListener('click', () => {
@@ -97,7 +73,6 @@ hamburger.addEventListener('click', () => {
   mobileMenu.classList.toggle('open');
 });
 
-// Close on link click
 document.querySelectorAll('.mob-link, .mob-cta').forEach(link => {
   link.addEventListener('click', () => {
     hamburger.classList.remove('open');
@@ -108,8 +83,7 @@ document.querySelectorAll('.mob-link, .mob-cta').forEach(link => {
 /* ─── SCROLL REVEAL ─────────────────────────────────────────── */
 function initScrollReveal() {
   const revealEls = document.querySelectorAll('.reveal-up, .reveal-left, .reveal-right');
-
-  const observer = new IntersectionObserver((entries) => {
+  const observer  = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         entry.target.classList.add('revealed');
@@ -117,26 +91,26 @@ function initScrollReveal() {
       }
     });
   }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-
   revealEls.forEach(el => observer.observe(el));
 }
 initScrollReveal();
 
 /* ─── JEWELLERY GRID ────────────────────────────────────────── */
-const jewelleryGrid   = document.getElementById('jewelleryGrid');
-const noResults       = document.getElementById('noResults');
-const searchInput     = document.getElementById('searchInput');
-const filterBtns      = document.querySelectorAll('.filter-btn');
+const jewelleryGrid = document.getElementById('jewelleryGrid');
+const noResults     = document.getElementById('noResults');
+const searchInput   = document.getElementById('searchInput');
+const filterBtns    = document.querySelectorAll('.filter-btn');
 
-let activeCategory  = 'all';
-let activeSearch    = '';
+let activeCategory = 'all';
+let activeSearch   = '';
+let allProducts    = [];   // in-memory cache updated by Firestore listener
 
 /**
  * Build a single jewellery card element
  */
 function createJewelCard(product) {
   const card = document.createElement('div');
-  card.className = 'jewel-card reveal-up';
+  card.className  = 'jewel-card reveal-up';
   card.dataset.cat = product.category;
 
   const imgContent = product.image
@@ -164,14 +138,14 @@ function createJewelCard(product) {
           <span class="price-val">${formatPrice(product.price)}</span>
           <span class="price-dur">${product.duration || 'per event'}</span>
         </div>
-        <button 
-  class="book-btn"
-  onclick="openBookModal(
-    '${product.name}',
-    '${formatPrice(product.price)} / ${product.duration || 'per event'}'
-  )">
-  Book Now
-</button>
+        <button
+          class="book-btn"
+          onclick="openBookModal(
+            '${product.name.replace(/'/g, "\\'")}',
+            '${formatPrice(product.price)} / ${product.duration || 'per event'}'
+          )">
+          Book Now
+        </button>
       </div>
     </div>
   `;
@@ -181,12 +155,12 @@ function createJewelCard(product) {
 
 /**
  * Render the jewellery grid based on current filters
+ * Uses the in-memory allProducts cache (kept fresh by Firestore listener)
  */
 function renderGrid() {
-  const products = getAllProducts();
   jewelleryGrid.innerHTML = '';
 
-  const filtered = products.filter(p => {
+  const filtered = allProducts.filter(p => {
     const matchCat  = activeCategory === 'all' || p.category === activeCategory;
     const matchSrch = p.name.toLowerCase().includes(activeSearch.toLowerCase())
                    || p.description.toLowerCase().includes(activeSearch.toLowerCase());
@@ -199,14 +173,13 @@ function renderGrid() {
     noResults.style.display = 'none';
     filtered.forEach((p, i) => {
       const card = createJewelCard(p);
-      // Stagger animation delay
       card.style.transitionDelay = `${Math.min(i * 0.06, 0.5)}s`;
       jewelleryGrid.appendChild(card);
     });
 
     // Re-observe new cards for scroll reveal
     setTimeout(() => {
-      const newCards = jewelleryGrid.querySelectorAll('.jewel-card');
+      const newCards   = jewelleryGrid.querySelectorAll('.jewel-card');
       const cardObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
@@ -218,14 +191,21 @@ function renderGrid() {
       newCards.forEach(c => cardObserver.observe(c));
     }, 50);
   }
+}
 
-  // Attach Book Now button listeners
-  jewelleryGrid.querySelectorAll('.book-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openBookModal(btn.dataset.name, btn.dataset.price);
-    });
+/**
+ * Subscribe to Firestore — grid updates automatically on any device
+ * whenever the admin adds / edits / deletes a product.
+ */
+try {
+  productsRef.orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+    allProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderGrid();
+  }, (err) => {
+    console.error('Firestore error:', err);
   });
+} catch (err) {
+  console.error('Firestore init error:', err);
 }
 
 // Filter buttons
@@ -248,19 +228,13 @@ searchInput.addEventListener('input', () => {
   }, 280);
 });
 
-// Listen for storage changes (admin updates)
-window.addEventListener('storage', () => renderGrid());
-
-// Initial render
-renderGrid();
-
 /* ─── TESTIMONIAL SLIDER ────────────────────────────────────── */
-const track     = document.getElementById('testimonialTrack');
-const dotsWrap  = document.getElementById('sliderDots');
-const prevBtn   = document.getElementById('prevBtn');
-const nextBtn   = document.getElementById('nextBtn');
+const track    = document.getElementById('testimonialTrack');
+const dotsWrap = document.getElementById('sliderDots');
+const prevBtn  = document.getElementById('prevBtn');
+const nextBtn  = document.getElementById('nextBtn');
 
-let currentSlide = 0;
+let currentSlide  = 0;
 let autoSlideTimer;
 
 function getSlidesPerView() {
@@ -274,7 +248,6 @@ function initSlider() {
   const spv    = getSlidesPerView();
   const total  = Math.ceil(slides.length / spv);
 
-  // Build dots
   dotsWrap.innerHTML = '';
   for (let i = 0; i < total; i++) {
     const dot = document.createElement('button');
@@ -294,14 +267,12 @@ function goToSlide(idx) {
 
   currentSlide = ((idx % total) + total) % total;
 
-  // Calculate card width with gap
-  const cardW   = track.parentElement.offsetWidth;
-  const gapPx   = 24;
-  const itemW   = (cardW - gapPx * (spv - 1)) / spv;
-  const offset  = currentSlide * (itemW + gapPx);
+  const cardW  = track.parentElement.offsetWidth;
+  const gapPx  = 24;
+  const itemW  = (cardW - gapPx * (spv - 1)) / spv;
+  const offset = currentSlide * (itemW + gapPx);
   track.style.transform = `translateX(-${offset}px)`;
 
-  // Update dots
   dotsWrap.querySelectorAll('.dot').forEach((d, i) => {
     d.classList.toggle('active', i === currentSlide);
   });
@@ -332,8 +303,6 @@ window.addEventListener('resize', initSlider);
 initSlider();
 
 /* ─── BOOK NOW MODAL ────────────────────────────────────────── */
-
-
 function openBookModal(name, price) {
   modalItemName.textContent  = name;
   modalItemPrice.textContent = price;
@@ -351,7 +320,6 @@ modalOverlay.addEventListener('click', (e) => {
   if (e.target === modalOverlay) closeModal();
 });
 
-// Modal form: send booking via WhatsApp
 modalForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const name  = document.getElementById('mName').value.trim();
@@ -379,14 +347,15 @@ modalForm.addEventListener('submit', (e) => {
 });
 
 /* ─── CONTACT FORM ──────────────────────────────────────────── */
-const contactForm   = document.getElementById('contactForm');
-const formSuccess   = document.getElementById('formSuccess');
+const contactForm = document.getElementById('contactForm');
+const formSuccess = document.getElementById('formSuccess');
 
 contactForm.addEventListener('submit', (e) => {
   e.preventDefault();
 
   const name     = document.getElementById('fname').value.trim();
   const phone    = document.getElementById('fphone').value.trim();
+  const email    = document.getElementById('femail').value.trim();
   const occasion = document.getElementById('foccasion').value;
   const date     = document.getElementById('fdate').value;
   const message  = document.getElementById('fmessage').value.trim();
@@ -396,32 +365,39 @@ contactForm.addEventListener('submit', (e) => {
     return;
   }
 
-  // Build WhatsApp message
-  const waMsg = encodeURIComponent(
-    `New Booking Enquiry from Alankar Website!\n\n` +
-    `Name: ${name}\n` +
-    `Phone: ${phone}\n` +
-    `Email: ${document.getElementById('femail').value || '—'}\n` +
-    `Occasion: ${occasion}\n` +
-    `Event Date: ${date}\n` +
-    `Message: ${message || 'No additional message'}`
-  );
+  const submitBtn = contactForm.querySelector('button[type="submit"]');
+  submitBtn.disabled  = true;
+  submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> &nbsp; Sending…';
 
-  // Show success message
-  formSuccess.classList.add('visible');
-  contactForm.reset();
-
-  setTimeout(() => {
-    formSuccess.classList.remove('visible');
-  }, 5000);
-
-  // Open WhatsApp
-  setTimeout(() => {
+  emailjs.send('service_etd3mfo', 'template_ymf9z6f', {
+    from_name: name,
+    phone:     phone,
+    email:     email || 'Not provided',
+    occasion:  occasion,
+    date:      date,
+    message:   message || 'No additional message',
+    to_email:  'alankarjewellery13@gmail.com'
+  })
+  .then(() => {
+    formSuccess.classList.add('visible');
+    contactForm.reset();
+    submitBtn.disabled  = false;
+    submitBtn.innerHTML = '<i class="fa fa-paper-plane"></i> &nbsp; Send Enquiry';
+    setTimeout(() => formSuccess.classList.remove('visible'), 5000);
+  })
+  .catch((err) => {
+    console.error('EmailJS error:', err);
+    alert('Could not send email. Please contact us directly on WhatsApp.');
+    const waMsg = encodeURIComponent(
+      `New Booking Enquiry!\n\nName: ${name}\nPhone: ${phone}\nOccasion: ${occasion}\nDate: ${date}\nMessage: ${message || '—'}`
+    );
     window.open(`https://wa.me/919100582369?text=${waMsg}`, '_blank');
-  }, 500);
+    submitBtn.disabled  = false;
+    submitBtn.innerHTML = '<i class="fa fa-paper-plane"></i> &nbsp; Send Enquiry';
+  });
 });
 
-/* ─── SMOOTH SCROLL FOR ANCHOR LINKS ───────────────────────── */
+/* ─── SMOOTH SCROLL ─────────────────────────────────────────── */
 document.querySelectorAll('a[href^="#"]').forEach(link => {
   link.addEventListener('click', (e) => {
     const target = document.querySelector(link.getAttribute('href'));

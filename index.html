@@ -209,27 +209,17 @@
       <div class="about-image-col reveal-left">
         <div class="about-img-frame">
           <div class="about-img-placeholder">
-            <img src="our_story.png" alt="Our Story">
+            <img src="our_story.png" alt="Our Story" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" onerror="this.style.display='none'" />
           </div>
         </div>
-        <div class="about-img-accent"></div>
       </div>
-
-      <div class="about-content-col reveal-right">
+      <div class="about-text-col reveal-right">
         <p class="section-eyebrow">About Us</p>
-        <h2 class="section-title">Bringing Bridal <em>Dreams</em> to Life</h2>
-        <div class="section-divider left"><span>✦</span></div>
-        <p class="about-text">
-          Alankar Rental Jewellery was born from a simple belief: every bride deserves to shine in the most exquisite jewellery, without the burden of an extravagant purchase. Founded over a decade ago, we have adorned thousands of brides across the city.
-        </p>
-        <p class="about-text">
-          Our curated collection spans traditional temple gold, kundan, polki, meenakari, and contemporary fusion — all maintained to the highest standards of hygiene and quality.
-        </p>
-        <ul class="about-list">
-          <li><i class="fa fa-check-circle"></i> Sanitised before every rental</li>
-          <li><i class="fa fa-check-circle"></i> Flexible rental durations</li>
-          <li><i class="fa fa-check-circle"></i> Custom bridal set curation</li>
-        </ul>
+        <h2 class="section-title">Our Story, <em>Our Dream</em></h2>
+        <p>Alankar Rental Jewellery was born from a simple dream — to make every woman feel confident, beautiful, and elegant without the worry of high jewellery costs.</p>
+        <p>We started this journey with a shared vision to bring premium, handcrafted jewellery closer to every bride and every celebration.</p>
+        <p>From timeless bridal sets to statement necklaces, earrings, and hip belts, each piece in our collection is chosen with love, care, and an eye for perfection.</p>
+        <blockquote>"Our promise is simple — luxury you'll love, at a price that makes sense."</blockquote>
         <a href="#contact" class="btn-primary">Book now</a>
       </div>
     </div>
@@ -331,6 +321,26 @@
       </form>
     </div>
   </div>
+
+  <!-- ===== EMAILJS SDK ===== -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <!-- 🔴 Replace YOUR_PUBLIC_KEY with your EmailJS public key -->
+  <script>emailjs.init("M3nFFo3mu8iU9aHTs");</script>
+
+  <!-- ===== FIREBASE SDK ===== -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey:            "AIzaSyDsMlCdSlStKOYSFWPtkc6wTCluuAY6v4k",
+      authDomain:        "alankar-47566.firebaseapp.com",
+      projectId:         "alankar-47566",
+      storageBucket:     "alankar-47566.firebasestorage.app",
+      messagingSenderId: "805747440439",
+      appId:             "1:805747440439:web:696a344be9ffda41dc78b2",
+      measurementId:     "G-C05JY0RSJ7"
+    });
+  </script>
 
   <!-- Main Script -->
   <script src="script.js"></script>
