@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel – Alankar Rental Jewellery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="admin-body">
+
+  <!-- ===== LOGIN OVERLAY ===== -->
+  <div class="admin-login-overlay" id="adminLoginOverlay">
+    <div class="admin-login-box">
+      <div class="admin-login-logo">
+        <span>✦</span>
+        <p>Alankar Admin</p>
+      </div>
+      <h2>Secure Access</h2>
+      <p class="admin-login-sub">Enter the admin password to continue</p>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="adminPwInput" placeholder="Enter admin password" />
+          <button type="button" id="togglePw" class="pw-toggle"><i class="fa fa-eye"></i></button>
+        </div>
+      </div>
+      <div class="admin-login-error" id="loginError">Incorrect password. Please try again.</div>
+      <button class="btn-primary full-width" id="loginBtn">Login <i class="fa fa-arrow-right"></i></button>
+      <a href="index.html" class="admin-back-link">← Back to Website</a>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN PANEL ===== -->
+  <div class="admin-panel" id="adminPanel" style="display:none;">
+
+    <!-- Admin Navbar -->
+    <div class="admin-nav">
+      <div class="admin-nav-logo">
+        <span>✦</span>
+        <div>
+          <span class="logo-title">Alankar</span>
+          <span class="logo-sub">Admin Panel</span>
+        </div>
+      </div>
+      <div class="admin-nav-actions">
+        <a href="index.html" class="btn-outline small" target="_blank"><i class="fa fa-external-link-alt"></i> View Site</a>
+        <button class="btn-outline small danger" id="logoutBtn"><i class="fa fa-sign-out-alt"></i> Logout</button>
+      </div>
+    </div>
+
+    <div class="admin-content">
+
+      <!-- Stats Row -->
+      <div class="admin-stats-row">
+        <div class="admin-stat-card">
+          <i class="fa fa-gem"></i>
+          <div>
+            <span id="statTotal" class="stat-big">0</span>
+            <span>Total Items</span>
+          </div>
+        </div>
+        <div class="admin-stat-card">
+          <i class="fa fa-crown"></i>
+          <div>
+            <span id="statBridal" class="stat-big">0</span>
+            <span>Bridal</span>
+          </div>
+        </div>
+        <div class="admin-stat-card">
+          <i class="fa fa-ring"></i>
+          <div>
+            <span id="statNecklace" class="stat-big">0</span>
+            <span>Necklaces</span>
+          </div>
+        </div>
+        <div class="admin-stat-card">
+          <i class="fa fa-star"></i>
+          <div>
+            <span id="statOther" class="stat-big">0</span>
+            <span>Earrings & More</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-two-col">
+
+        <!-- ADD NEW ITEM FORM -->
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3><i class="fa fa-plus-circle"></i> Add New Jewellery</h3>
+          </div>
+
+          <form id="addItemForm" novalidate>
+
+            <!-- Image Upload -->
+            <div class="form-group">
+              <label>Jewellery Image *</label>
+              <div class="img-upload-area" id="imgUploadArea">
+                <input type="file" id="imgFile" accept="image/*" style="display:none;" />
+                <div class="img-upload-inner" id="imgUploadInner">
+                  <i class="fa fa-cloud-upload-alt"></i>
+                  <p>Click or drag & drop image here</p>
+                  <span>JPG, PNG, WEBP — Max 5MB</span>
+                </div>
+                <img id="imgPreview" class="img-preview" style="display:none;" alt="Preview" />
+              </div>
+              <button type="button" class="btn-outline small mt-8" id="clearImgBtn" style="display:none;">
+                <i class="fa fa-times"></i> Remove Image
+              </button>
+            </div>
+
+            <!-- Name -->
+            <div class="form-group">
+              <label for="itemName">Jewellery Name *</label>
+              <input type="text" id="itemName" placeholder="e.g. Royal Kundan Necklace Set" required />
+            </div>
+
+            <!-- Category -->
+            <div class="form-group">
+              <label for="itemCategory">Category *</label>
+              <select id="itemCategory" required>
+                <option value="">Select category</option>
+                <option value="bridal">Bridal</option>
+                <option value="necklace">Necklace</option>
+                <option value="earrings">Earrings</option>
+                <option value="bangles">Bangles</option>
+              </select>
+            </div>
+
+            <!-- Price -->
+            <div class="form-row">
+              <div class="form-group">
+                <label for="itemPrice">Rental Price (₹) *</label>
+                <input type="number" id="itemPrice" placeholder="e.g. 1500" min="0" required />
+              </div>
+              <div class="form-group">
+                <label for="itemDuration">Duration</label>
+                <select id="itemDuration">
+                  <option>per day</option>
+                  <option>per event</option>
+                  <option>3 days</option>
+                  <option>per week</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="form-group">
+              <label for="itemDesc">Description *</label>
+              <textarea id="itemDesc" rows="3" placeholder="Describe the jewellery — material, style, occasion suitability…" required></textarea>
+            </div>
+
+            <!-- Featured Toggle -->
+            <div class="form-group toggle-row">
+              <label>Mark as Featured?</label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="itemFeatured" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <!-- Error / Success -->
+            <div class="admin-form-error" id="addItemError" style="display:none;"></div>
+
+            <button type="submit" class="btn-primary full-width" id="addItemBtn">
+              <i class="fa fa-plus"></i> Add Jewellery Item
+            </button>
+          </form>
+        </div>
+
+        <!-- MANAGE ITEMS LIST -->
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3><i class="fa fa-list"></i> Manage Jewellery</h3>
+            <div class="admin-search-wrap">
+              <i class="fa fa-search"></i>
+              <input type="text" id="adminSearch" placeholder="Search items…" />
+            </div>
+          </div>
+
+          <div class="admin-items-list" id="adminItemsList">
+            <!-- Items injected by admin.js -->
+          </div>
+
+          <!-- Danger Zone -->
+          <div class="danger-zone">
+            <h4><i class="fa fa-exclamation-triangle"></i> Danger Zone</h4>
+            <p>This will permanently delete ALL jewellery items including samples. This cannot be undone.</p>
+            <button class="btn-outline small danger" id="clearAllBtn">
+              <i class="fa fa-trash-alt"></i> Delete All Items
+            </button>
+          </div>
+        </div>
+
+      </div><!-- end admin-two-col -->
+
+    </div><!-- end admin-content -->
+  </div><!-- end admin-panel -->
+
+  <!-- Edit Modal -->
+  <div class="modal-overlay" id="editModalOverlay">
+    <div class="modal-box wide">
+      <button class="modal-close" id="editModalClose"><i class="fa fa-times"></i></button>
+      <h3 class="modal-title">Edit Jewellery Item</h3>
+      <form id="editItemForm" novalidate>
+        <input type="hidden" id="editId" />
+        <div class="form-group">
+          <label>Jewellery Name *</label>
+          <input type="text" id="editName" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category *</label>
+            <select id="editCategory" required>
+              <option value="bridal">Bridal</option>
+              <option value="necklace">Necklace</option>
+              <option value="earrings">Earrings</option>
+              <option value="bangles">Bangles</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Rental Price (₹) *</label>
+            <input type="number" id="editPrice" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description *</label>
+          <textarea id="editDesc" rows="3" required></textarea>
+        </div>
+        <div class="form-group toggle-row">
+          <label>Featured?</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="editFeatured" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <button type="submit" class="btn-primary full-width">Save Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
