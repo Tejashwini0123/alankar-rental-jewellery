@@ -417,7 +417,7 @@ contactForm.addEventListener('submit', (e) => {
 
   // Open WhatsApp
   setTimeout(() => {
-    window.open(`https://wa.me/9100582369?text=${waMsg}`, '_blank');
+    window.open(`https://wa.me/919100582369?text=${waMsg}`, '_blank');
   }, 500);
 });
 
