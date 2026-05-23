@@ -106,19 +106,44 @@ let activeSearch   = '';
 let allProducts    = [];   // in-memory cache updated by Firestore listener
 
 /**
- * Build a single jewellery card element
+ * Build a single jewellery card element.
+ * Shows a slider when product.images has >1 entry; single image otherwise.
  */
 function createJewelCard(product) {
   const card = document.createElement('div');
   card.className  = 'jewel-card reveal-up';
   card.dataset.cat = product.category;
 
-  const imgContent = product.image
-    ? `<img src="${product.image}" alt="${product.name}" loading="lazy" />`
-    : `<div class="jewel-placeholder">
-         <i class="fa ${getCatIcon(product.category)}"></i>
-         <span>${product.category}</span>
-       </div>`;
+  // Resolve images array (support both old `image` string and new `images` array)
+  const imgList = (product.images && product.images.length)
+    ? product.images
+    : (product.image ? [product.image] : []);
+
+  /* --- image section --- */
+  let imgContent;
+  if (imgList.length === 0) {
+    imgContent = `<div class="jewel-placeholder">
+       <i class="fa ${getCatIcon(product.category)}"></i>
+       <span>${product.category}</span>
+     </div>`;
+  } else if (imgList.length === 1) {
+    imgContent = `<img src="${imgList[0]}" alt="${product.name}" loading="lazy" />`;
+  } else {
+    // Multi-image slider
+    const slides = imgList.map(url =>
+      `<div class="jewel-slide"><img src="${url}" alt="${product.name}" loading="lazy" /></div>`
+    ).join('');
+    const dots = imgList.map((_, i) =>
+      `<button class="jewel-slider-dot${i === 0 ? ' active' : ''}" data-index="${i}" aria-label="Image ${i+1}"></button>`
+    ).join('');
+    imgContent = `
+      <div class="jewel-slider" data-current="0">
+        <div class="jewel-slider-track">${slides}</div>
+        <button class="jewel-slider-arrow prev" aria-label="Previous"><i class="fa fa-chevron-left"></i></button>
+        <button class="jewel-slider-arrow next" aria-label="Next"><i class="fa fa-chevron-right"></i></button>
+        <div class="jewel-slider-dots">${dots}</div>
+      </div>`;
+  }
 
   const badgeHtml = product.featured
     ? `<span class="jewel-badge featured">✦ Featured</span>`
@@ -140,8 +165,9 @@ function createJewelCard(product) {
         </div>
         <button
           class="book-btn"
-          onclick="openBookModal(
+          onclick="bookNowWhatsApp(
             '${product.name.replace(/'/g, "\\'")}',
+            '${product.category}',
             '${formatPrice(product.price)} / ${product.duration || 'per event'}'
           )">
           Book Now
@@ -150,7 +176,54 @@ function createJewelCard(product) {
     </div>
   `;
 
+  // Wire up slider if multiple images
+  if (imgList.length > 1) {
+    initJewelSlider(card, imgList.length);
+  }
+
   return card;
+}
+
+/**
+ * Initialise the slider inside a jewel card.
+ * Manual-only navigation: arrows, dots, and touch swipe.
+ * No auto-slide.
+ */
+function initJewelSlider(card, total) {
+  const slider  = card.querySelector('.jewel-slider');
+  const track   = card.querySelector('.jewel-slider-track');
+  const dots    = card.querySelectorAll('.jewel-slider-dot');
+  const prevBtn = card.querySelector('.jewel-slider-arrow.prev');
+  const nextBtn = card.querySelector('.jewel-slider-arrow.next');
+
+  let current = 0;
+
+  function goTo(idx) {
+    current = ((idx % total) + total) % total;
+    track.style.transform = `translateX(-${current * 100}%)`;
+    dots.forEach((d, i) => d.classList.toggle('active', i === current));
+    slider.dataset.current = current;
+  }
+
+  prevBtn.addEventListener('click', (e) => { e.stopPropagation(); goTo(current - 1); });
+  nextBtn.addEventListener('click', (e) => { e.stopPropagation(); goTo(current + 1); });
+
+  dots.forEach(dot => {
+    dot.addEventListener('click', (e) => {
+      e.stopPropagation();
+      goTo(parseInt(dot.dataset.index, 10));
+    });
+  });
+
+  // Touch swipe support (manual)
+  let touchStartX = null;
+  slider.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  slider.addEventListener('touchend', (e) => {
+    if (touchStartX === null) return;
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) goTo(diff > 0 ? current + 1 : current - 1);
+    touchStartX = null;
+  });
 }
 
 /**
@@ -308,6 +381,21 @@ function openBookModal(name, price) {
   modalItemPrice.textContent = price;
   modalOverlay.classList.add('open');
   document.body.style.overflow = 'hidden';
+}
+
+/**
+ * Book Now button on each product card — opens WhatsApp directly
+ * with a prefilled message containing the selected product's details.
+ */
+function bookNowWhatsApp(name, category, price) {
+  const msg = encodeURIComponent(
+    `Hello, I am interested in this jewellery item.\n\n` +
+    `Product Name: ${name}\n` +
+    `Category: ${category}\n` +
+    `Price/Rent: ${price}\n\n` +
+    `Please share more details.`
+  );
+  window.open(`https://wa.me/919100582369?text=${msg}`, '_blank');
 }
 
 function closeModal() {

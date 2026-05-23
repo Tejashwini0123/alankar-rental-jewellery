@@ -57,10 +57,9 @@ const editModalClose   = document.getElementById('editModalClose');
 const editItemForm     = document.getElementById('editItemForm');
 
 /* ─── STATE ─────────────────────────────────────────────────── */
-let currentImageUrl  = null;
-let pendingImageFile = null;
-let editSearchQuery  = '';
-let cachedProducts   = [];
+let pendingImageFiles = [];   // Array of File objects to upload
+let editSearchQuery   = '';
+let cachedProducts    = [];
 
 /* ================================================================
    AUTHENTICATION
@@ -128,14 +127,21 @@ function startProductsListener() {
 }
 
 /* ================================================================
-   IMAGE UPLOAD
+   IMAGE UPLOAD — MULTI-IMAGE SUPPORT
 ================================================================ */
 
-imgUploadArea.addEventListener('click', () => imgFile.click());
+/* Element refs for multi-image upload */
+const multiImgPreviewGrid = document.getElementById('multiImgPreviewGrid');
+
+imgUploadArea.addEventListener('click', (e) => {
+  if (e.target.closest('.remove-thumb')) return; // handled separately
+  imgFile.click();
+});
 
 imgFile.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (file) processImageFile(file);
+  const files = Array.from(e.target.files);
+  files.forEach(file => addImageFile(file));
+  imgFile.value = ''; // reset so same file can be re-added if removed
 });
 
 imgUploadArea.addEventListener('dragover', (e) => {
@@ -146,38 +152,61 @@ imgUploadArea.addEventListener('dragleave', () => imgUploadArea.classList.remove
 imgUploadArea.addEventListener('drop', (e) => {
   e.preventDefault();
   imgUploadArea.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file && file.type.startsWith('image/')) processImageFile(file);
+  Array.from(e.dataTransfer.files).forEach(file => {
+    if (file.type.startsWith('image/')) addImageFile(file);
+  });
 });
 
-function processImageFile(file) {
+function addImageFile(file) {
   if (file.size > 5 * 1024 * 1024) {
-    showAddError('Image size must be under 5MB.');
+    showAddError(`"${file.name}" exceeds 5MB limit.`);
     return;
   }
-  pendingImageFile = file;
-  currentImageUrl  = null;
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    imgPreview.src              = e.target.result;
-    imgPreview.style.display    = 'block';
-    imgUploadInner.style.display = 'none';
-    clearImgBtn.style.display   = 'inline-flex';
-  };
-  reader.readAsDataURL(file);
+  pendingImageFiles.push(file);
+  renderImgPreviews();
 }
 
-clearImgBtn.addEventListener('click', clearImage);
+function renderImgPreviews() {
+  if (pendingImageFiles.length === 0) {
+    multiImgPreviewGrid.style.display = 'none';
+    imgUploadInner.style.display      = 'block';
+    clearImgBtn.style.display         = 'none';
+    imgUploadArea.classList.remove('has-images');
+    return;
+  }
 
-function clearImage() {
-  currentImageUrl  = null;
-  pendingImageFile = null;
-  imgPreview.src   = '';
-  imgPreview.style.display    = 'none';
-  imgUploadInner.style.display = 'block';
-  clearImgBtn.style.display   = 'none';
-  imgFile.value = '';
+  imgUploadInner.style.display        = 'none';
+  multiImgPreviewGrid.style.display   = 'flex';
+  clearImgBtn.style.display           = 'inline-flex';
+  imgUploadArea.classList.add('has-images');
+
+  multiImgPreviewGrid.innerHTML = '';
+
+  pendingImageFiles.forEach((file, idx) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const thumb = document.createElement('div');
+      thumb.className = 'multi-img-thumb';
+      thumb.innerHTML = `
+        <img src="${ev.target.result}" alt="preview ${idx + 1}" />
+        <button class="remove-thumb" data-idx="${idx}" title="Remove">✕</button>
+      `;
+      thumb.querySelector('.remove-thumb').addEventListener('click', (e) => {
+        e.stopPropagation();
+        pendingImageFiles.splice(idx, 1);
+        renderImgPreviews();
+      });
+      multiImgPreviewGrid.appendChild(thumb);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+clearImgBtn.addEventListener('click', clearAllImages);
+
+function clearAllImages() {
+  pendingImageFiles = [];
+  renderImgPreviews();
 }
 
 /* ================================================================
@@ -224,20 +253,22 @@ addItemForm.addEventListener('submit', async (e) => {
 
   hideAddError();
 
-  if (pendingImageFile) {
-    addItemBtn.disabled = true;
-    addItemBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Uploading image...';
+  let uploadedUrls = [];
+
+  if (pendingImageFiles.length > 0) {
+    addItemBtn.disabled  = true;
+    addItemBtn.innerHTML = `<i class="fa fa-spinner fa-spin"></i> Uploading ${pendingImageFiles.length} image(s)...`;
     try {
-      currentImageUrl = await uploadToCloudinary(pendingImageFile);
+      uploadedUrls = await Promise.all(pendingImageFiles.map(f => uploadToCloudinary(f)));
     } catch (err) {
       showAddError('Image upload failed: ' + err.message);
-      addItemBtn.disabled = false;
+      addItemBtn.disabled  = false;
       addItemBtn.innerHTML = '<i class="fa fa-plus"></i> Add Jewellery Item';
       return;
     }
   }
 
-  addItemBtn.disabled = true;
+  addItemBtn.disabled  = true;
   addItemBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Saving...';
 
   try {
@@ -247,26 +278,27 @@ addItemForm.addEventListener('submit', async (e) => {
       price,
       duration,
       description: desc,
-      image:       currentImageUrl || null,
+      image:       uploadedUrls[0] || null,       // first image for backward compat
+      images:      uploadedUrls.length ? uploadedUrls : [],
       featured,
       createdAt:   new Date().toISOString()
     });
 
     addItemForm.reset();
-    clearImage();
+    clearAllImages();
     itemFeatured.checked = false;
 
-    addItemBtn.innerHTML = '<i class="fa fa-check"></i> Item Added!';
+    addItemBtn.innerHTML       = '<i class="fa fa-check"></i> Item Added!';
     addItemBtn.style.background = 'linear-gradient(135deg, #27ae60, #1a8a47)';
     setTimeout(() => {
-      addItemBtn.innerHTML = '<i class="fa fa-plus"></i> Add Jewellery Item';
+      addItemBtn.innerHTML       = '<i class="fa fa-plus"></i> Add Jewellery Item';
       addItemBtn.style.background = '';
-      addItemBtn.disabled = false;
+      addItemBtn.disabled        = false;
     }, 2500);
 
   } catch (err) {
     showAddError('Failed to save item: ' + err.message);
-    addItemBtn.disabled = false;
+    addItemBtn.disabled  = false;
     addItemBtn.innerHTML = '<i class="fa fa-plus"></i> Add Jewellery Item';
   }
 });
@@ -313,8 +345,9 @@ function renderAdminList(searchQuery = editSearchQuery) {
     row.className  = 'admin-item-row';
     row.dataset.id = product.id;
 
-    const thumbHtml = product.image
-      ? `<img src="${product.image}" alt="${product.name}" />`
+    const firstImg = (product.images && product.images.length) ? product.images[0] : product.image;
+    const thumbHtml = firstImg
+      ? `<img src="${firstImg}" alt="${product.name}" />`
       : `<i class="fa fa-gem"></i>`;
 
     row.innerHTML = `

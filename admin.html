@@ -99,13 +99,13 @@
             <div class="form-group">
               <label>Jewellery Image *</label>
               <div class="img-upload-area" id="imgUploadArea">
-                <input type="file" id="imgFile" accept="image/*" style="display:none;" />
+                <input type="file" id="imgFile" accept="image/*" multiple style="display:none;" />
                 <div class="img-upload-inner" id="imgUploadInner">
                   <i class="fa fa-cloud-upload-alt"></i>
-                  <p>Click or drag & drop image here</p>
-                  <span>JPG, PNG, WEBP — Max 5MB</span>
+                  <p>Click or drag & drop — select multiple images</p>
+                  <span>JPG, PNG, WEBP — Max 5MB each</span>
                 </div>
-                <img id="imgPreview" class="img-preview" style="display:none;" alt="Preview" />
+                <div id="multiImgPreviewGrid" style="display:none; padding:10px; display:none; flex-wrap:wrap; gap:8px; justify-content:center;"></div>
               </div>
               <button type="button" class="btn-outline small mt-8" id="clearImgBtn" style="display:none;">
                 <i class="fa fa-times"></i> Remove Image
