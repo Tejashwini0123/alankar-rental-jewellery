@@ -395,7 +395,7 @@ function bookNowWhatsApp(name, category, price) {
     `Price/Rent: ${price}\n\n` +
     `Please share more details.`
   );
-  window.open(`https://wa.me/919100582369?text=${msg}`, '_blank');
+  window.open(`https://wa.me/919515346132?text=${msg}`, '_blank');
 }
 
 function closeModal() {
@@ -429,7 +429,7 @@ modalForm.addEventListener('submit', (e) => {
     `Please confirm availability. Thank you!`
   );
 
-  window.open(`https://wa.me/919100582369?text=${msg}`, '_blank');
+  window.open(`https://wa.me/919515346132?text=${msg}`, '_blank');
   closeModal();
   modalForm.reset();
 });
@@ -479,7 +479,7 @@ contactForm.addEventListener('submit', (e) => {
     const waMsg = encodeURIComponent(
       `New Booking Enquiry!\n\nName: ${name}\nPhone: ${phone}\nOccasion: ${occasion}\nDate: ${date}\nMessage: ${message || '—'}`
     );
-    window.open(`https://wa.me/919100582369?text=${waMsg}`, '_blank');
+    window.open(`https://wa.me/919515346132?text=${waMsg}`, '_blank');
     submitBtn.disabled  = false;
     submitBtn.innerHTML = '<i class="fa fa-paper-plane"></i> &nbsp; Send Enquiry';
   });
