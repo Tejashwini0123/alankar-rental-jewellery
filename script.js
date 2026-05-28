@@ -27,7 +27,7 @@ function getCatIcon(cat) {
     bridal:   'fa-crown',
     necklace: 'fa-ring',
     earrings: 'fa-star',
-    bangles:  'fa-circle-notch'
+    belts:  'fa-circle-notch'
   };
   return icons[cat] || 'fa-gem';
 }

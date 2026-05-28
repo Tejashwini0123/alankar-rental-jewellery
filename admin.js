@@ -491,7 +491,7 @@ function updateStats() {
   statBridal.textContent   = cachedProducts.filter(p => p.category === 'bridal').length;
   statNecklace.textContent = cachedProducts.filter(p => p.category === 'necklace').length;
   statOther.textContent    = cachedProducts.filter(p =>
-    p.category === 'earrings' || p.category === 'bangles'
+    p.category === 'earrings' || p.category === 'waist-belts'
   ).length;
 }
 
@@ -501,7 +501,7 @@ function updateStats() {
 
 function capitalize(str) {
   if (!str) return '';
-  if (str.toLowerCase() === 'bangles') return 'Waist Belts';
+  if (str.toLowerCase() === 'waist-belts') return 'Waist Belts';
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
