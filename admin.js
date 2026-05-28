@@ -134,7 +134,8 @@ function startProductsListener() {
 const multiImgPreviewGrid = document.getElementById('multiImgPreviewGrid');
 
 imgUploadArea.addEventListener('click', (e) => {
-  if (e.target.closest('.remove-thumb')) return; // handled separately
+  if (e.target.closest('.remove-thumb')) return;   // handled separately
+  if (e.target.closest('.multi-img-thumb')) return; // don't re-open dialog on existing thumbnails
   imgFile.click();
 });
 
@@ -200,6 +201,17 @@ function renderImgPreviews() {
     };
     reader.readAsDataURL(file);
   });
+
+  // "Add more" tile — lets user add more images without accidentally re-triggering
+  const addMoreTile = document.createElement('div');
+  addMoreTile.className = 'multi-img-thumb add-more-tile';
+  addMoreTile.title = 'Add more images';
+  addMoreTile.innerHTML = `<i class="fa fa-plus"></i><span>Add more</span>`;
+  addMoreTile.addEventListener('click', (e) => {
+    e.stopPropagation();
+    imgFile.click();
+  });
+  multiImgPreviewGrid.appendChild(addMoreTile);
 }
 
 clearImgBtn.addEventListener('click', clearAllImages);
@@ -488,7 +500,9 @@ function updateStats() {
 ================================================================ */
 
 function capitalize(str) {
-  return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+  if (!str) return '';
+  if (str.toLowerCase() === 'bangles') return 'Waist Belts';
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 document.addEventListener('keydown', (e) => {
