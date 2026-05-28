@@ -1664,6 +1664,29 @@ input, select, textarea { font-family: var(--font-body); }
   line-height: 1;
 }
 .multi-img-thumb .remove-thumb:hover { background: #a02020; }
+.multi-img-thumb.add-more-tile {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  border: 1px dashed rgba(201,168,76,0.45);
+  background: rgba(201,168,76,0.06);
+  gap: 4px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.multi-img-thumb.add-more-tile:hover {
+  background: rgba(201,168,76,0.14);
+  border-color: rgba(201,168,76,0.7);
+}
+.multi-img-thumb.add-more-tile i {
+  font-size: 1.1rem;
+  color: rgba(201,168,76,0.8);
+}
+.multi-img-thumb.add-more-tile span {
+  font-size: 0.55rem;
+  color: rgba(201,168,76,0.7);
+  text-align: center;
+  line-height: 1.2;
+}
 .img-upload-area.has-images { min-height: auto; }
 
 @media (max-width: 480px) {
